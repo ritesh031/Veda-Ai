@@ -3,10 +3,20 @@ import IORedis from 'ioredis';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 
-export const redis = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
+// Upstash uses rediss:// (TLS) in production, plain redis:// locally
+const isTLS = REDIS_URL.startsWith('rediss://');
+
+function makeRedis() {
+  return new IORedis(REDIS_URL, {
+    maxRetriesPerRequest: null,
+    tls: isTLS ? { rejectUnauthorized: false } : undefined,
+  });
+}
+
+export const redis = makeRedis();
 
 export const generationQueue = new Queue('question-generation', {
-  connection: new IORedis(REDIS_URL, { maxRetriesPerRequest: null }),
+  connection: makeRedis(),
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: 'exponential', delay: 2000 },

@@ -20,7 +20,13 @@ app.get('/api/health', (_, res) => res.json({ ok: true, ts: new Date().toISOStri
 initWebSocket(server);
 
 // Redis pub/sub → WebSocket bridge
-const sub = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', { maxRetriesPerRequest: null });
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const isTLS = REDIS_URL.startsWith('rediss://');
+const sub = new IORedis(REDIS_URL, {
+  maxRetriesPerRequest: null,
+  tls: isTLS ? { rejectUnauthorized: false } : undefined,
+});
+
 sub.subscribe('ws-notify', (err) => {
   if (err) console.error('[Server] Redis subscribe error:', err);
   else console.log('[Server] Subscribed to ws-notify');
