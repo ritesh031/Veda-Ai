@@ -31,6 +31,7 @@ sub.subscribe('ws-notify', (err) => {
   if (err) console.error('[Server] Redis subscribe error:', err);
   else console.log('[Server] Subscribed to ws-notify');
 });
+
 sub.on('message', (_, message) => {
   try {
     const { assignmentId, ...payload } = JSON.parse(message);
@@ -41,6 +42,12 @@ sub.on('message', (_, message) => {
 async function start() {
   await mongoose.connect(process.env.MONGODB_URL || 'mongodb://localhost:27017/vedaai');
   console.log('[Server] MongoDB connected');
+
+  // ── Start the worker in the same process ──────────────────────────────────
+  // This avoids needing a separate paid Render service
+  require('./workerInline');
+  // ─────────────────────────────────────────────────────────────────────────
+
   server.listen(process.env.PORT || 4000, () => {
     console.log(`[Server] Running on http://localhost:${process.env.PORT || 4000}`);
   });
